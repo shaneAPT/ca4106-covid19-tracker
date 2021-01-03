@@ -1,0 +1,155 @@
+doctype html
+html(lang='en')
+		head
+				meta(charset='utf-8')
+				meta(name='viewport', content='width=device-width, initial-scale=1, shrink-to-fit=no')
+				title TraCovid-19
+				// Bootstrap CSS
+				link(href='/bootstrap/bootstrap.min.css', rel='stylesheet')
+				// Google Font
+				link(href='https://fonts.googleapis.com/css2?family=Raleway&display=swap', rel='stylesheet')
+				// Custom CSS
+				link(rel="stylesheet" href="/style.css")
+				// Navbar, header, section came from https://startbootstrap.com/previews/one-page-wonder/, colours, sizes etc. altered within the CSS file.
+				link(rel='icon' href='https://ca4106-team4-v2.appspot.com.storage.googleapis.com/virus.png')
+		body
+				nav.navbar.navbar-expand-lg.navbar-dark.navbar-custom.fixed-top
+						.container
+								a.navbar-brand(href='#') TraCovid-19
+								button.navbar-toggler(type='button', data-toggle='collapse', data-target='#navbarResponsive', aria-controls='navbarResponsive', aria-expanded='false', aria-label='Toggle navigation')
+										span.navbar-toggler-icon
+								#navbarResponsive.collapse.navbar-collapse
+										ul.navbar-nav.ml-auto
+				header.masthead.text-center.text-white
+						.masthead-content
+								.container
+										h1.masthead-heading.mb-0 COVID-19
+										h2.masthead-subheading.mb-0 Track the novel virus cases in Ireland.
+						.bg-circle-1.bg-circle
+						.bg-circle-2.bg-circle
+				section
+					.container
+						.row.align-items-center
+										.col-lg-12.order-lg-2
+												.p-5
+														h2.display-8 Irish-based website to track up-to-date COVID-19 cases in Ireland. 
+														// Table from https://www.w3schools.com/bootstrap/bootstrap_tables.asp
+					.container									
+						h3 Map of Cases
+						p=batteryStatus
+								// Div element for map
+								#map
+								script(type="text/javascript").
+										// Initialize and add the map
+											function initMap() {
+													var centrePoint = {lat: 53.5189414, lng: -7.7448823};
+
+													// JSON.parse used to convert objects passed to .jade file into javascript objects.
+													var jsCounties = JSON.parse('!{JSON.stringify(counties)}');
+													var jsCountyCases = JSON.parse('!{JSON.stringify(countyCases)}');
+
+													var coronaIcon = {
+														url: 'https://storage.cloud.google.com/ca4106-team4-v2.appspot.com/virus.png?authuser=2&organizationId=999744533918&orgonly=true&supportedpurview=organizationId',
+														scaledSize: new google.maps.Size(30, 30),
+														origin: new google.maps.Point(-15,-15),
+														anchor: new google.maps.Point(0,0)
+													}
+
+													var map = new google.maps.Map(document.getElementById('map'), {zoom: 6.5, center: centrePoint, streetViewControl: false});
+													jsCounties.forEach(function(countyElement, countyIndex) {
+																var countyLat = countyElement.coords.latitude;
+																var countyLon = countyElement.coords.longitude;
+
+																// contentString is used to populate InfoWindows on each marker on the embedded map.
+																var contentString = "<b>County:</b> " + countyElement.name;
+
+																jsCountyCases.forEach(function(countyCasesElement, countyCasesIndex) {
+																			if (countyElement.name == countyCasesElement.name) {
+																						contentString += "<br><b>Total Cases:</b> " + countyCasesElement.totalCases + "<br><b>Total Recovered:</b> " + countyCasesElement.totalRecovered + "<br><b>Total Deaths:</b> " + countyCasesElement.totalDeaths;
+																			}
+																});
+
+																var countyInfo = countyElement.name+"Info";
+
+																countyInfo = new google.maps.InfoWindow({
+																			content: contentString
+																});
+
+																var countyMarker = countyElement.name+"Marker";
+
+																countyMarker = new google.maps.Marker({position: {lat: countyLat, lng: countyLon}, map: map, title: countyElement.name, icon: coronaIcon}); 
+
+																countyMarker.addListener('click', function() {
+																			countyInfo.open(map, countyMarker);
+																});
+													});
+											}
+
+						fieldset#add-coronaCase
+									legend Add coronaCase
+									form(method="post" action="/coronaCases" enctype="multipart/form-data")
+											label
+													| Location: 
+													//input(name="location" type="text" placeholder="Location")
+													select(name="location")
+															each county in counties
+																	option(value=county.countyId) #{county.name}
+											br
+											label
+													| Status: 
+													select(name="status")
+															option(value="0") Active
+															option(value="1") Recovered
+															option(value="2") Death
+											br
+											input(type="submit" value="Add Corona Case")
+						br
+						h2 Cases by County
+						p Please note all cases are anonymised to protect the identity of patients.
+							section#counties
+									if counties.length
+												table.table.table-condensed
+															thead
+																	tr
+																		th County
+																		th Cases
+																		th Recovered
+																		th Deaths
+															tbody
+																		each county in countyCases
+																					tr
+																						td=county.name
+																						td=county.totalCases
+																						td=county.totalRecovered
+																						td=county.totalDeaths
+									else
+											no counties
+							br
+							h2 All Cases
+							section#coronaCases
+									if coronaCases.length
+														table.table.table-condensed
+																thead
+																		tr
+																			th Location
+																			th Status
+																tbody
+																		each coronaCase in coronaCases
+																				tr
+																					each county in counties
+																						if county.countyId == coronaCase.location
+																							td=county.name
+																					if coronaCase.status == '0'
+																						td Active
+																					else if coronaCase.status == '1'
+																						td Recovered
+																					else
+																						td Death
+
+									else
+											.nocoronaCases There are no coronaCases! 
+
+				script(async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBwsHcIEeCTbknQEkF_8nznevFFmbqmhjo&callback=initMap")
+				script(src='https://code.jquery.com/jquery-3.4.1.slim.min.js', integrity='sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n', crossorigin='anonymous')
+				script(src='https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js', integrity='sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo', crossorigin='anonymous')
+				script(src='https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js', integrity='sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6', crossorigin='anonymous')
